@@ -1,0 +1,50 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+    -   id: check-added-large-files
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+
+-   repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+    -   id: autoflake
+        args:
+        - --recursive
+        - --in-place
+        - --remove-all-unused-imports
+        - --remove-unused-variables
+        - --expand-star-imports
+        - --exclude
+        - __init__.py
+        - --remove-duplicate-keys
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+    -   id: isort
+        name: isort (python)
+        args: [ "--profile", "black" ]
+-   repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+    -   id: black
+
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v2.34.0
+    hooks:
+    -   id: pyupgrade
+        args:
+            - --py38-plus
+            - --keep-runtime-typing
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 4.0.1
+    hooks:
+    -   id: flake8
+        args:
+            - --count
+            - --statistics
