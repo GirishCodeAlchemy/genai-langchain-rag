@@ -76,5 +76,38 @@ def health():
     return 'OK'
 
 
+# from auth import user
+
+
+# # Disable browser caching so changes in each step are always shown
+# @app.after_request
+# def set_response_headers(response):
+#     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+#     response.headers['Pragma'] = 'no-cache'
+#     response.headers['Expires'] = '0'
+#     return response
+
+# @app.route('/', methods=['GET'])
+# def main_page():
+#     user_email = request.headers.get('X-Goog-Authenticated-User-Email')
+#     user_id = request.headers.get('X-Goog-Authenticated-User-ID')
+
+#     verified_email, verified_id = user()
+
+#     page = render_template('index.html',
+#         email=user_email,
+#         id=user_id,
+#         verified_email=verified_email,
+#         verified_id=verified_id)
+#     return page
+
+# @app.route('/privacy', methods=['GET'])
+# def show_policy():
+#     page = render_template('privacy.html')
+#     return page
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080, debug=True)
+
+

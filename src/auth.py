@@ -11,6 +11,7 @@ AUDIENCE = None # Cached value requiring information from metadata server
 def keys():
     global KEYS
 
+
     if KEYS is None:
         resp = requests.get('https://www.gstatic.com/iap/verify/public_key')
         KEYS = resp.json()
