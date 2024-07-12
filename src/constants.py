@@ -1,0 +1,4 @@
+_METRIC_TYPE = 'L2'
+_NLIST = 1024
+_NPROBE = 16
+_TOPK = 3
