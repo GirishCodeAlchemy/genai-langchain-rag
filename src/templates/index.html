@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alchemy RAG ChatBot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+        #chat-container {
+            width: 60%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #queryForm {
+            margin-bottom: 20px;
+        }
+        #queryForm textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        #queryForm input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #queryForm input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+        .message {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            white-space: pre-wrap; /* Handle whitespace and newlines */
+        }
+        .user-message {
+            background-color: #f8d7da;
+            text-align: right;
+            justify-content: flex-end;
+        }
+        .bot-response {
+            background-color: lightblue;
+            justify-content: flex-start;
+        }
+        .bot-image {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <h1>Alchemy RAG ChatBot</h1>
+        <form id="queryForm">
+            <label for="query">Enter your query:</label><br>
+            <textarea id="query" name="query" rows="4" cols="50" required></textarea><br><br>
+            <input type="submit" value="Submit">
+        </form>
+        <div id="chat-history"></div>
+    </div>
+
+    <script>
+        document.getElementById('queryForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const query = document.getElementById('query').value;
+            const chatHistory = document.getElementById('chat-history');
+
+            // Display user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user-message';
+            userMessage.textContent = query;
+
+            // Prepend user message to the chat history
+            chatHistory.prepend(userMessage);
+
+            document.getElementById('query').value = ''; // Clear the input field
+
+            // Display loading message
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message bot-response';
+            loadingMessage.textContent = 'Loading...';
+
+            // Prepend loading message to the chat history
+            chatHistory.prepend(loadingMessage);
+
+            try {
+                const response = await fetch('/invoke_query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const result = await response.json();
+                loadingMessage.remove(); // Remove loading message
+
+                const botResponse = document.createElement('div');
+                botResponse.className = 'message bot-response';
+
+                // Add bot image
+                const botImage = document.createElement('img');
+                botImage.src = 'https://api.dicebear.com/8.x/bottts/svg?top=antenna,antennaCrooked,glowingBulb02&baseColor=00acc1&scale=100&size=50';  // Replace with actual bot image URL
+                botImage.className = 'bot-image';
+
+                botResponse.appendChild(botImage);
+
+                // Create a span for the text to handle whitespace and newlines
+                const botText = document.createElement('span');
+                botText.textContent = result.response.output;
+                botResponse.appendChild(botText);
+
+                // Prepend bot response to the chat history
+                chatHistory.prepend(botResponse);
+            } catch (error) {
+                loadingMessage.remove(); // Remove loading message
+
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message bot-response';
+
+                // Add bot image
+                const botImage = document.createElement('img');
+                botImage.src = 'https://api.dicebear.com/8.x/bottts/svg?top=antenna,antennaCrooked,glowingBulb02&baseColor=00acc1&scale=100&size=50';  // Replace with actual bot image URL
+                botImage.className = 'bot-image';
+
+                errorMessage.appendChild(botImage);
+
+                // Create a span for the error text to handle whitespace and newlines
+                const errorText = document.createElement('span');
+                errorText.textContent = 'Error: ' + error.message;
+                errorMessage.appendChild(errorText);
+
+                // Prepend error message to the chat history
+                chatHistory.prepend(errorMessage);
+            }
+        });
+    </script>
+</body>
+</html>
