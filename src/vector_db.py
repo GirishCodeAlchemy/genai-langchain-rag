@@ -8,7 +8,6 @@ from langchain.document_loaders import DirectoryLoader, TextLoader
 from langchain.vectorstores import FAISS
 
 
-
 def find_filename(path: str):
     if not path:
         return ""
@@ -29,7 +28,6 @@ class VectorDB:
     @staticmethod
     def get_instance(model_provider: model.GenAIModels):
         return InMemory(model_provider)
-
 
 
 class InMemory(VectorDB):

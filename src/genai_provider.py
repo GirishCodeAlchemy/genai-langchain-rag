@@ -7,7 +7,6 @@ from langchain.chains.qa_with_sources import load_qa_with_sources_chain
 from langchain.schema import Document
 
 
-
 class GenAIModels:
 
     def embedding_model(self):
