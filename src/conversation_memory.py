@@ -1,6 +1,8 @@
 from langchain.memory import ConversationBufferMemory
 
 
+# ConversationBufferMemory(llm=self.chat_agent, memory_key="chat_history", input_key="question",return_message=True, output_key="answer", max_token_limit=7500)
+
 class LimitedConversationBufferMemory(ConversationBufferMemory):
     def __init__(self, memory_key="history", input_key="input", max_token_limit=7500):
         super().__init__(memory_key=memory_key, input_key=input_key, max_token_limit=max_token_limit)
