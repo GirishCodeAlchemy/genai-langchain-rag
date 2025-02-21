@@ -1,3 +1,4 @@
 # Alchemy GenAi langchain Rag
 
-![alchemy Onbording Bot Design drawio](https://github.com/user-attachments/assets/de76e8a4-27c0-4694-b7cb-94461e97a363)
+![ALchemy_Onbording Bot Design drawio](https://github.com/user-attachments/assets/c6a159c1-21db-4dc6-818b-347e006c9fd2)
+
