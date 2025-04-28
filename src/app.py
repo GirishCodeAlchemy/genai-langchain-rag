@@ -1,12 +1,16 @@
 import os
+from datetime import timedelta
 
 from app_logger import logger
-from dotenv import find_dotenv, load_dotenv
-from flask import Flask, jsonify, render_template, request
-from flask_cors import cross_origin
-from pydantic import ValidationError
-from werkzeug.utils import secure_filename
 from app_validator import QueryResponse
+from dotenv import find_dotenv, load_dotenv
+from flask import Flask, jsonify, redirect, render_template, request, url_for
+from flask_cors import cross_origin
+from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
+from genai_service import GenAIService
+from pydantic import ValidationError
+from werkzeug.security import check_password_hash, generate_password_hash, safe_join
+from werkzeug.utils import secure_filename
 
 # Check if .env file exists in the current directory
 dotenv_path = find_dotenv()
@@ -18,10 +22,75 @@ if not dotenv_path:
 load_dotenv(dotenv_path)
 
 app = Flask(__name__)
+app.config["UPLOAD_FOLDER"] = "./data/"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=5)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
+
+users = {
+    os.environ.get("USERNAME"): generate_password_hash(
+        os.environ.get("PASSWORD")
+    )
+}
+
+class User(UserMixin):
+    def __init__(self, id):
+        self.id = id
+
+
+@login_manager.user_loader
+def user_loader(user_id):
+    return User(user_id)
+
+
+@login_manager.request_loader
+def request_loader(request):
+    username = request.form.get("username")
+    if username not in users:
+        return None
+    user = User(username)
+    user.is_authenticated = check_password_hash(
+        users.get(username), request.form["password"]
+    )
+    return user
+
+
+@app.route("/login", methods=["GET", "POST"])
+@cross_origin()
+def login():
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+        if username in users and check_password_hash(users.get(username), password):
+            user = User(username)
+            status = login_user(user, remember=True, duration=timedelta(minutes=5))
+            logger.info(f"User {username} logged in status: {status}")
+            return jsonify(success=True), 200
+        logger.info("invald username or password")
+        return jsonify(success=False, error="Invalid username or password"), 400
+    else:
+        return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+@cross_origin()
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
+@app.route("/is_authenticated")
+def is_authenticated():
+    return jsonify({"is_authenticated": current_user.is_authenticated})
+
 
 genai_service = GenAIService(
     app_key=os.environ.get("OPENAI_API_KEY"),
     pvt_key_base64=os.environ.get("PVT_KEY_BASE64"),
+    ca_path=os.environ.get("CA_PATH"),
 )
 
 @app.route('/')
@@ -29,6 +98,16 @@ genai_service = GenAIService(
 def index():
     return render_template('index.html')
 
+def escape(s, quote=None):
+    """Replace special characters "&", "<" and ">" to HTML-safe sequences.
+        If the optional flag quote is true, the quotation mark character (")
+    is also translated."""
+    s = s.replace("&", "&amp;")
+    s = s.replace("<", "&lt;")
+    s = s.replace(">", "&gt;")
+    if quote:
+        s = s.replace('"', "&quot;")
+    return s
 
 @app.route('/ask', methods=['POST'])
 @cross_origin()
@@ -36,6 +115,7 @@ def ask():
     try:
         logger.info("start the execution")
         data = request.get_json(force=True)
+        query = escape(data.get("query"))
         response_data = genai_service.get_llm_response(query)
         return jsonify(QueryResponse(response=response_data, error=None).model_dump())
     except ValidationError as e:
@@ -46,17 +126,33 @@ def ask():
 
 @app.route('/upload', methods=['POST'])
 @cross_origin()
+@login_required
 def upload_file():
+    if not current_user.is_authenticated:
+        logger.info("User is not authenticated")
+        return render_template("login.html")
     if 'file' not in request.files:
         return 'No file uploaded', 400
     file = request.files['file']
+    if (
+        file.filename.startswith("..")
+        or (".." in file.filename)
+        or (os.path.basename(file.filename) != file.filename)
+    ):
+        return "File is unsafe", 400
     if not file.filename.endswith('.pdf') or file.filename == '':
         return 'Only PDF files are allowed', 400
     if file:
         filename = secure_filename(file.filename)
-        file.save(os.path.join('./data/', filename))
+        file_path = safe_join(app.config["UPLOAD_FOLDER"], filename)
+        if file_path is None:
+            return "File is unsafe", 400
+        file.save(file_path)
+        logger.info(f"File saved to {file_path}")
         print('File successfully uploaded')
-        load_vector_db()
+        genai_service.refresh_headers()
+        genai_service.db.upload_pdf_file(file_path)
+        genai_service.vectordb = genai_service.load_vectordb()
         return 'File successfully uploaded'
     else:
         return 'No file uploaded', 400
